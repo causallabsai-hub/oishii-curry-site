@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>おいしいカレー屋</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      background: #fff8ef;
+      color: #333;
+    }
+
+    header {
+      background: #b45309;
+      color: white;
+      padding: 36px 20px;
+      text-align: center;
+    }
+
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 32px;
+    }
+
+    section {
+      max-width: 1000px;
+      margin: auto;
+      padding: 32px 20px;
+    }
+
+    h2 {
+      border-left: 6px solid #b45309;
+      padding-left: 12px;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+    }
+
+    .card img {
+      width: 100%;
+      display: block;
+    }
+
+    .card-body {
+      padding: 16px;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+    }
+
+    .price {
+      color: #b45309;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    footer {
+      background: #333;
+      color: white;
+      text-align: center;
+      padding: 20px;
+      margin-top: 32px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>おいしいカレー屋</h1>
+    <p>メニュー・テイクアウト・来店予約に対応しています</p>
+  </header>
+
+  <section>
+    <h2>メニュー</h2>
+
+    <div class="menu-grid">
+
+      <div class="card">
+        <img src="chicken-curry.png" alt="おいしいチキンカレー">
+        <div class="card-body">
+          <h3>おいしいチキンカレー</h3>
+          <p class="price">900円</p>
+          <p>やわらかいチキンが入った定番のカレーです。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <img src="vegetable-curry.png" alt="野菜たっぷりカレー">
+        <div class="card-body">
+          <h3>野菜たっぷりカレー</h3>
+          <p class="price">850円</p>
+          <p>彩り野菜をたっぷり使った、やさしい味わいのカレーです。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <img src="beef-curry.png" alt="ビーフカレー">
+        <div class="card-body">
+          <h3>ビーフカレー</h3>
+          <p class="price">1,100円</p>
+          <p>牛肉の旨みを楽しめる、コク深いカレーです。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <img src="keema-curry.png" alt="キーマカレー">
+        <div class="card-body">
+          <h3>キーマカレー</h3>
+          <p class="price">950円</p>
+          <p>ひき肉とスパイスの香りを楽しめるカレーです。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <img src="kids-curry.png" alt="お子さまカレー">
+        <div class="card-body">
+          <h3>お子さまカレー</h3>
+          <p class="price">650円</p>
+          <p>辛さを抑えた、お子さま向けの甘口カレーです。</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section>
+    <h2>営業時間</h2>
+    <p>平日：11:00〜21:00</p>
+    <p>土日祝：11:00〜22:00</p>
+    <p>定休日：水曜日</p>
+  </section>
+
+  <section>
+    <h2>アクセス</h2>
+    <p>東京都サンプル区カレー町1-2-3</p>
+    <p>サンプル駅から徒歩5分</p>
+    <p>駐車場：2台分あり</p>
+  </section>
+
+  <footer>
+    <p>© おいしいカレー屋</p>
+  </footer>
+
+</body>
+</html>
