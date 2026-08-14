@@ -101,7 +101,9 @@
 
       <form id="reservationForm">
         <label for="visit_date">来店予定日</label>
-        <input id="visit_date" name="visit_date" type="text" placeholder="例：8/14" required />
+        <select id="visit_date" name="visit_date" required>
+  <option value="">空いている日を選択してください</option>
+</select>
 
         <label for="people_count">人数</label>
         <input id="people_count" name="people_count" type="number" min="1" max="20" placeholder="例：2" required />
@@ -113,7 +115,9 @@
         <input id="phone_number" name="phone_number" type="tel" placeholder="例：03-1234-5678" required />
 
         <label for="selected_time">希望時間</label>
-        <input id="selected_time" name="selected_time" type="text" placeholder="例：19:00" required />
+        <select id="selected_time" name="selected_time" required disabled>
+  <option value="">先に来店予定日を選択してください</option>
+</select>
 
         <label for="curry_type">カレーの種類</label>
         <select id="curry_type" name="curry_type" required>
@@ -180,6 +184,56 @@
     const result = document.getElementById("result");
     const button = document.getElementById("submitButton");
 
+let availabilityData = [];
+
+const visitDateSelect = document.getElementById("visit_date");
+const selectedTimeSelect = document.getElementById("selected_time");
+
+async function loadAvailability() {
+  try {
+    const response = await fetch("/api/availability");
+    const data = await response.json();
+
+    availabilityData = data.available_dates || [];
+
+    visitDateSelect.innerHTML = '<option value="">空いている日を選択してください</option>';
+
+    availabilityData.forEach((item) => {
+      const option = document.createElement("option");
+      option.value = item.date;
+      option.textContent = item.label;
+      visitDateSelect.appendChild(option);
+    });
+  } catch (error) {
+    visitDateSelect.innerHTML = '<option value="">空き状況を取得できませんでした</option>';
+  }
+}
+
+visitDateSelect.addEventListener("change", () => {
+  const selectedDate = visitDateSelect.value;
+  const dateData = availabilityData.find((item) => item.date === selectedDate);
+
+  selectedTimeSelect.innerHTML = "";
+
+  if (!dateData || !dateData.slots || dateData.slots.length === 0) {
+    selectedTimeSelect.disabled = true;
+    selectedTimeSelect.innerHTML = '<option value="">空き時間がありません</option>';
+    return;
+  }
+
+  selectedTimeSelect.disabled = false;
+  selectedTimeSelect.innerHTML = '<option value="">空いている時間を選択してください</option>';
+
+  dateData.slots.forEach((slot) => {
+    const option = document.createElement("option");
+    option.value = slot;
+    option.textContent = slot;
+    selectedTimeSelect.appendChild(option);
+  });
+});
+
+loadAvailability();
+    
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
 
