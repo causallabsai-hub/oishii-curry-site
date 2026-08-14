@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>おいしいカレー屋 予約フォーム</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #fff8ee;
+      color: #2b1a0f;
+      margin: 0;
+      padding: 0;
+    }
+
+    header {
+      background: #b94b18;
+      color: #fff;
+      padding: 24px 16px;
+      text-align: center;
+    }
+
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 16px 48px;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-top: 14px;
+      margin-bottom: 6px;
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 16px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #d6c4b5;
+    }
+
+    textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    button {
+      margin-top: 20px;
+      background: #b94b18;
+      color: white;
+      border: none;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .result {
+      white-space: pre-wrap;
+      line-height: 1.7;
+      background: #fffdf8;
+      border: 1px solid #ead7c4;
+      border-radius: 12px;
+      padding: 16px;
+      min-height: 80px;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #6b4a35;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>おいしいカレー屋</h1>
+    <p>来店予約フォーム</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>予約内容を入力してください</h2>
+      <p class="note">
+        入力内容をもとに、Difyチャットボットへ送信します。予約確定はDify側の予約作成API結果に基づいて表示されます。
+      </p>
+
+      <form id="reservationForm">
+        <label for="visit_date">来店予定日</label>
+        <input id="visit_date" name="visit_date" type="text" placeholder="例：8/14" required />
+
+        <label for="people_count">人数</label>
+        <input id="people_count" name="people_count" type="number" min="1" max="20" placeholder="例：2" required />
+
+        <label for="customer_name">お名前</label>
+        <input id="customer_name" name="customer_name" type="text" placeholder="例：伊藤" required />
+
+        <label for="phone_number">電話番号</label>
+        <input id="phone_number" name="phone_number" type="tel" placeholder="例：03-1234-5678" required />
+
+        <label for="selected_time">希望時間</label>
+        <input id="selected_time" name="selected_time" type="text" placeholder="例：19:00" required />
+
+        <label for="curry_type">カレーの種類</label>
+        <select id="curry_type" name="curry_type" required>
+          <option value="">選択してください</option>
+          <option value="おいしいチキンカレー">おいしいチキンカレー</option>
+          <option value="野菜たっぷりカレー">野菜たっぷりカレー</option>
+          <option value="ビーフカレー">ビーフカレー</option>
+          <option value="キーマカレー">キーマカレー</option>
+          <option value="お子さまカレー">お子さまカレー</option>
+        </select>
+
+        <label for="spice_level">辛さ</label>
+        <select id="spice_level" name="spice_level" required>
+          <option value="">選択してください</option>
+          <option value="0辛：辛くない">0辛：辛くない</option>
+          <option value="1辛：甘口">1辛：甘口</option>
+          <option value="2辛：中辛">2辛：中辛</option>
+          <option value="3辛：辛口">3辛：辛口</option>
+          <option value="4辛：かなり辛い">4辛：かなり辛い</option>
+          <option value="5辛：激辛">5辛：激辛</option>
+        </select>
+
+        <label for="rice_size">ライス量</label>
+        <select id="rice_size" name="rice_size" required>
+          <option value="">選択してください</option>
+          <option value="小盛">小盛</option>
+          <option value="普通">普通</option>
+          <option value="大盛">大盛</option>
+          <option value="特盛">特盛</option>
+        </select>
+
+        <label for="topping">トッピング</label>
+        <select id="topping" name="topping" required>
+          <option value="">選択してください</option>
+          <option value="なし">なし</option>
+          <option value="チーズ">チーズ</option>
+          <option value="温泉卵">温泉卵</option>
+          <option value="からあげ">からあげ</option>
+          <option value="野菜増し">野菜増し</option>
+          <option value="カツ">カツ</option>
+        </select>
+
+        <label for="quantity">数量</label>
+        <input id="quantity" name="quantity" type="number" min="1" value="1" required />
+
+        <label for="allergy">アレルギー有無</label>
+        <input id="allergy" name="allergy" type="text" placeholder="例：なし / 卵アレルギーあり" required />
+
+        <label for="request_note">その他追加事項</label>
+        <textarea id="request_note" name="request_note" placeholder="例：スプーン多め、入口近くの席希望"></textarea>
+
+        <button id="submitButton" type="submit">予約内容を送信する</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>予約結果</h2>
+      <div id="result" class="result">ここに予約結果が表示されます。</div>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("reservationForm");
+    const result = document.getElementById("result");
+    const button = document.getElementById("submitButton");
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      button.disabled = true;
+      button.textContent = "送信中です...";
+      result.textContent = "予約内容を送信しています。少々お待ちください。";
+
+      const formData = new FormData(form);
+
+      const payload = {
+        visit_date: formData.get("visit_date"),
+        people_count: Number(formData.get("people_count")),
+        customer_name: formData.get("customer_name"),
+        phone_number: formData.get("phone_number"),
+        selected_time: formData.get("selected_time"),
+        curry_type: formData.get("curry_type"),
+        spice_level: formData.get("spice_level"),
+        rice_size: formData.get("rice_size"),
+        topping: formData.get("topping"),
+        quantity: Number(formData.get("quantity")),
+        allergy: formData.get("allergy"),
+        request_note: formData.get("request_note") || "追加事項なし"
+      };
+
+      try {
+        const response = await fetch("/api/reservation", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "送信に失敗しました。");
+        }
+
+        result.textContent = data.answer || "予約結果を取得しました。";
+      } catch (error) {
+        result.textContent = "エラーが発生しました。\n" + error.message;
+      } finally {
+        button.disabled = false;
+        button.textContent = "予約内容を送信する";
+      }
+    });
+  </script>
+</body>
+</html>
