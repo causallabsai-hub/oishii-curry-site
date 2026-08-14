@@ -20,6 +20,16 @@
       text-align: center;
     }
 
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 24px;
+    }
+
+    header p {
+      margin: 0;
+      font-size: 14px;
+    }
+
     main {
       max-width: 720px;
       margin: 0 auto;
@@ -32,6 +42,11 @@
       padding: 20px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.08);
       margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 20px;
     }
 
     label {
@@ -48,6 +63,7 @@
       padding: 12px;
       border-radius: 10px;
       border: 1px solid #d6c4b5;
+      background: #fff;
     }
 
     textarea {
@@ -58,7 +74,7 @@
     button {
       margin-top: 20px;
       background: #b94b18;
-      color: white;
+      color: #fff;
       border: none;
       font-weight: 700;
       cursor: pointer;
@@ -84,6 +100,18 @@
       color: #6b4a35;
       line-height: 1.6;
     }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 16px;
+      color: #b94b18;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .back-link:hover {
+      text-decoration: underline;
+    }
   </style>
 </head>
 <body>
@@ -93,17 +121,26 @@
   </header>
 
   <main>
+    <a class="back-link" href="https://causallabsai-hub.github.io/oishii-curry-site/">
+      ← メニューサイトへ戻る
+    </a>
+
     <section class="card">
       <h2>予約内容を入力してください</h2>
       <p class="note">
         空いている日時を選んで、予約内容を入力してください。
-     </p>
+      </p>
 
       <form id="reservationForm">
         <label for="visit_date">来店予定日</label>
         <select id="visit_date" name="visit_date" required>
-  <option value="">空いている日を選択してください</option>
-</select>
+          <option value="">空いている日を選択してください</option>
+        </select>
+
+        <label for="selected_time">希望時間</label>
+        <select id="selected_time" name="selected_time" required disabled>
+          <option value="">先に来店予定日を選択してください</option>
+        </select>
 
         <label for="people_count">人数</label>
         <input id="people_count" name="people_count" type="number" min="1" max="20" placeholder="例：2" required />
@@ -113,11 +150,6 @@
 
         <label for="phone_number">電話番号</label>
         <input id="phone_number" name="phone_number" type="tel" placeholder="例：03-1234-5678" required />
-
-        <label for="selected_time">希望時間</label>
-        <select id="selected_time" name="selected_time" required disabled>
-  <option value="">先に来店予定日を選択してください</option>
-</select>
 
         <label for="curry_type">カレーの種類</label>
         <select id="curry_type" name="curry_type" required>
@@ -184,56 +216,74 @@
     const result = document.getElementById("result");
     const button = document.getElementById("submitButton");
 
-let availabilityData = [];
+    const visitDateSelect = document.getElementById("visit_date");
+    const selectedTimeSelect = document.getElementById("selected_time");
 
-const visitDateSelect = document.getElementById("visit_date");
-const selectedTimeSelect = document.getElementById("selected_time");
+    let availabilityData = [];
 
-async function loadAvailability() {
-  try {
-    const response = await fetch("/api/availability");
-    const data = await response.json();
+    async function loadAvailability() {
+      try {
+        visitDateSelect.innerHTML = '<option value="">空き状況を読み込み中です...</option>';
+        selectedTimeSelect.innerHTML = '<option value="">先に来店予定日を選択してください</option>';
+        selectedTimeSelect.disabled = true;
 
-    availabilityData = data.available_dates || [];
+        const response = await fetch("/api/availability");
 
-    visitDateSelect.innerHTML = '<option value="">空いている日を選択してください</option>';
+        if (!response.ok) {
+          throw new Error("空き状況の取得に失敗しました。");
+        }
 
-    availabilityData.forEach((item) => {
-      const option = document.createElement("option");
-      option.value = item.date;
-      option.textContent = item.label;
-      visitDateSelect.appendChild(option);
+        const data = await response.json();
+        availabilityData = data.available_dates || [];
+
+        visitDateSelect.innerHTML = '<option value="">空いている日を選択してください</option>';
+
+        if (availabilityData.length === 0) {
+          visitDateSelect.innerHTML = '<option value="">現在選択できる日付がありません</option>';
+          return;
+        }
+
+        availabilityData.forEach((item) => {
+          const option = document.createElement("option");
+          option.value = item.date;
+          option.textContent = item.label;
+          visitDateSelect.appendChild(option);
+        });
+      } catch (error) {
+        visitDateSelect.innerHTML = '<option value="">空き状況を取得できませんでした</option>';
+        result.textContent = "空き状況の取得に失敗しました。\n時間をおいて再度お試しください。";
+      }
+    }
+
+    visitDateSelect.addEventListener("change", () => {
+      const selectedDate = visitDateSelect.value;
+      const dateData = availabilityData.find((item) => item.date === selectedDate);
+
+      selectedTimeSelect.innerHTML = "";
+
+      if (!selectedDate) {
+        selectedTimeSelect.disabled = true;
+        selectedTimeSelect.innerHTML = '<option value="">先に来店予定日を選択してください</option>';
+        return;
+      }
+
+      if (!dateData || !dateData.slots || dateData.slots.length === 0) {
+        selectedTimeSelect.disabled = true;
+        selectedTimeSelect.innerHTML = '<option value="">空き時間がありません</option>';
+        return;
+      }
+
+      selectedTimeSelect.disabled = false;
+      selectedTimeSelect.innerHTML = '<option value="">空いている時間を選択してください</option>';
+
+      dateData.slots.forEach((slot) => {
+        const option = document.createElement("option");
+        option.value = slot;
+        option.textContent = slot;
+        selectedTimeSelect.appendChild(option);
+      });
     });
-  } catch (error) {
-    visitDateSelect.innerHTML = '<option value="">空き状況を取得できませんでした</option>';
-  }
-}
 
-visitDateSelect.addEventListener("change", () => {
-  const selectedDate = visitDateSelect.value;
-  const dateData = availabilityData.find((item) => item.date === selectedDate);
-
-  selectedTimeSelect.innerHTML = "";
-
-  if (!dateData || !dateData.slots || dateData.slots.length === 0) {
-    selectedTimeSelect.disabled = true;
-    selectedTimeSelect.innerHTML = '<option value="">空き時間がありません</option>';
-    return;
-  }
-
-  selectedTimeSelect.disabled = false;
-  selectedTimeSelect.innerHTML = '<option value="">空いている時間を選択してください</option>';
-
-  dateData.slots.forEach((slot) => {
-    const option = document.createElement("option");
-    option.value = slot;
-    option.textContent = slot;
-    selectedTimeSelect.appendChild(option);
-  });
-});
-
-loadAvailability();
-    
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
 
@@ -245,10 +295,10 @@ loadAvailability();
 
       const payload = {
         visit_date: formData.get("visit_date"),
+        selected_time: formData.get("selected_time"),
         people_count: Number(formData.get("people_count")),
         customer_name: formData.get("customer_name"),
         phone_number: formData.get("phone_number"),
-        selected_time: formData.get("selected_time"),
         curry_type: formData.get("curry_type"),
         spice_level: formData.get("spice_level"),
         rice_size: formData.get("rice_size"),
@@ -281,6 +331,8 @@ loadAvailability();
         button.textContent = "予約内容を送信する";
       }
     });
+
+    loadAvailability();
   </script>
 </body>
 </html>
