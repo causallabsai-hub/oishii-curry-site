@@ -112,6 +112,37 @@
     .back-link:hover {
       text-decoration: underline;
     }
+
+.reservation-status {
+      font-size: 22px;
+      font-weight: 800;
+      margin-bottom: 14px;
+      color: #b94b18;
+    }
+
+    .reservation-message {
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+
+    .menu-button {
+      display: block;
+      width: 100%;
+      box-sizing: border-box;
+      margin-top: 20px;
+      padding: 14px;
+      border-radius: 10px;
+      background: #b94b18;
+      color: #fff;
+      font-weight: 700;
+      text-align: center;
+      text-decoration: none;
+    }
+
+    .menu-button:hover {
+      opacity: 0.9;
+    }
+    
   </style>
 </head>
 <body>
@@ -284,12 +315,54 @@
       });
     });
 
+     function showReservationResult(payload) {
+      result.textContent = "";
+
+      const status = document.createElement("div");
+      status.className = "reservation-status";
+      status.textContent = "予約確定";
+
+      const message = document.createElement("div");
+      message.className = "reservation-message";
+      message.textContent = "ご予約ありがとうございます。ご来店お待ちしております。";
+
+      const details = document.createElement("div");
+
+      details.textContent =
+`【予約内容】
+来店予定日：${payload.visit_date}
+希望時間：${payload.selected_time}
+人数：${payload.people_count}名様
+お名前：${payload.customer_name}様
+電話番号：${payload.phone_number}
+
+【来店時の提供予定メニュー】
+カレーの種類：${payload.curry_type}
+辛さ：${payload.spice_level}
+ライス量：${payload.rice_size}
+トッピング：${payload.topping}
+数量：${payload.quantity}個
+アレルギー有無：${payload.allergy}
+その他追加事項：${payload.request_note}`;
+
+      const menuButton = document.createElement("a");
+      menuButton.href = "https://causallabsai-hub.github.io/oishii-curry-site/";
+      menuButton.className = "menu-button";
+      menuButton.textContent = "メニューに戻る";
+
+      result.appendChild(status);
+      result.appendChild(message);
+      result.appendChild(details);
+      result.appendChild(menuButton);
+    }
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
 
       button.disabled = true;
-      button.textContent = "送信中です...";
-      result.textContent = "予約内容を送信しています。少々お待ちください。";
+      button.textContent = "予約処理中...";
+
+      result.textContent = "ご予約内容確認しております。";
 
       const formData = new FormData(form);
 
@@ -308,6 +381,10 @@
         request_note: formData.get("request_note") || "追加事項なし"
       };
 
+      const processingTimer = setTimeout(() => {
+        result.textContent = "予約確定処理中...";
+      }, 700);
+
       try {
         const response = await fetch("/api/reservation", {
           method: "POST",
@@ -319,19 +396,33 @@
 
         const data = await response.json();
 
+        clearTimeout(processingTimer);
+
         if (!response.ok) {
-          throw new Error(data.error || "送信に失敗しました。");
+          throw new Error(data.error || "予約処理に失敗しました。");
         }
 
-        result.textContent = data.answer || "予約結果を取得しました。";
+        if (data.confirmed !== true) {
+          throw new Error("Googleカレンダーへの予約登録を確認できませんでした。");
+        }
+
+        showReservationResult(payload);
+
+        button.textContent = "予約確定しました";
       } catch (error) {
-        result.textContent = "エラーが発生しました。\n" + error.message;
-      } finally {
+        clearTimeout(processingTimer);
+
+        result.textContent =
+          "予約処理に失敗しました。\n" +
+          error.message +
+          "\n\n予約は確定していません。もう一度お試しください。";
+
         button.disabled = false;
         button.textContent = "予約内容を送信する";
       }
     });
 
+        
     loadAvailability();
   </script>
 </body>
