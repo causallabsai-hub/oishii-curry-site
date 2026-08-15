@@ -309,6 +309,45 @@ export default async function handler(req, res) {
       request_note
     });
 
+
+const appsScriptUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
+
+if (!appsScriptUrl) {
+  throw new Error("APPS_SCRIPT_WEB_APP_URL が設定されていません。");
+}
+
+const notificationResponse = await fetch(appsScriptUrl, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({
+    visit_date,
+    selected_time,
+    people_count,
+    customer_name,
+    phone_number,
+    curry_type,
+    spice_level,
+    rice_size,
+    topping,
+    quantity,
+    allergy,
+    request_note: request_note || "追加事項なし"
+  })
+});
+
+if (!notificationResponse.ok) {
+  throw new Error("店舗への予約通知に失敗しました。");
+}
+
+const notificationData = await notificationResponse.json();
+
+if (notificationData.success !== true) {
+  throw new Error(
+    notificationData.error || "店舗への予約通知に失敗しました。"
+  );
+}    
     return res.status(200).json({
       confirmed: true,
       status: "confirmed",
