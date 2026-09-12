@@ -8,7 +8,15 @@ function base64UrlEncode(input) {
     .replace(/\//g, "_");
 }
 
-async function getGoogleAccessToken(serviceAccount) {
+async function getAccessToken() {
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+  if (!serviceAccountJson) {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON が設定されていません。");
+  }
+
+  const serviceAccount = JSON.parse(serviceAccountJson);
+
   const now = Math.floor(Date.now() / 1000);
 
   const header = {
@@ -36,11 +44,11 @@ async function getGoogleAccessToken(serviceAccount) {
   const signature = signer.sign(serviceAccount.private_key, "base64");
 
   const encodedSignature = signature
-    .replace(/=/g, "")
     .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 
-  const jwt = `${unsignedJwt}.${encodedSignature}`;
+  const signedJwt = `${unsignedJwt}.${encodedSignature}`;
 
   const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
     method: "POST",
@@ -49,7 +57,7 @@ async function getGoogleAccessToken(serviceAccount) {
     },
     body: new URLSearchParams({
       grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt
+      assertion: signedJwt
     })
   });
 
@@ -65,7 +73,6 @@ async function getGoogleAccessToken(serviceAccount) {
 
   return tokenData.access_token;
 }
-
 function createCalendarDateTime(visitDate, selectedTime) {
   return `${visitDate}T${selectedTime}:00+09:00`;
 }
