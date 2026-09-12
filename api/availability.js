@@ -23,40 +23,75 @@ const availableSlots = [
   "21:30"
 ];
 
+const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
+
+// 定休日設定
+// 水曜定休の場合は 3
+// 日曜=0, 月曜=1, 火曜=2, 水曜=3, 木曜=4, 金曜=5, 土曜=6
+const closedWeekdays = [3];
+
+function formatDateValue(date) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, "0");
+  const dd = String(date.getDate()).padStart(2, "0");
+
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function formatDateLabel(date) {
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const weekday = weekdays[date.getDay()];
+
+  return `${month}/${day}（${weekday}）`;
+}
+
+function isClosedDate(date) {
+  return closedWeekdays.includes(date.getDay());
+}
+
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({
+      success: false,
+      status: "error",
       error: "Method Not Allowed"
     });
   }
 
-  return res.status(200).json({
-    available_dates: [
-      {
-        date: "2026-08-16",
-        label: "8/16（日）",
-        slots: availableSlots
-      },
-      {
-        date: "2026-08-17",
-        label: "8/17（月）",
-        slots: availableSlots
-      },
-      {
-        date: "2026-08-18",
-        label: "8/18（火）",
-        slots: availableSlots
-      },
-      {
-        date: "2026-08-19",
-        label: "8/19（水）",
-        slots: availableSlots
-      },
-      {
-        date: "2026-08-20",
-        label: "8/20（木）",
-        slots: availableSlots
+  try {
+    const availableDates = [];
+    const today = new Date();
+
+    // 今日から30日以内
+    for (let i = 0; i < 30; i++) {
+      const date = new Date(today);
+      date.setDate(today.getDate() + i);
+
+      // 定休日は除外
+      if (isClosedDate(date)) {
+        continue;
       }
-    ]
-  });
+
+      availableDates.push({
+        date: formatDateValue(date),
+        label: formatDateLabel(date),
+        slots: availableSlots
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      status: "available",
+      available_dates: availableDates
+    });
+  } catch (error) {
+    console.error("Availability error:", error);
+
+    return res.status(500).json({
+      success: false,
+      status: "error",
+      error: error.message || "空き時間の取得に失敗しました。"
+    });
+  }
 }
