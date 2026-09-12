@@ -213,7 +213,7 @@ export default async function handler(req, res) {
       people_count,
       customer_name,
       phone_number,
-      selected_time,
+      selected_time: selectedTime,
       curry_type,
       spice_level,
       rice_size,
@@ -247,7 +247,7 @@ if (
     }
   });
 }
-
+    
     if (
       !selected_time ||
       !curry_type ||
