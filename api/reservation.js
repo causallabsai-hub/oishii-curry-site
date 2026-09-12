@@ -316,19 +316,19 @@ if (
     }
 
     const calendarEvent = await createGoogleCalendarEvent({
-      visit_date,
-      people_count,
-      customer_name,
-      phone_number,
-      selected_time,
-      curry_type,
-      spice_level,
-      rice_size,
-      topping,
-      quantity,
-      allergy,
-      request_note
-    });
+  visit_date,
+  people_count,
+  customer_name,
+  phone_number,
+  selected_time: selectedTime,
+  curry_type,
+  spice_level,
+  rice_size,
+  topping,
+  quantity,
+  allergy,
+  request_note
+});
 
 
 const appsScriptUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
