@@ -222,17 +222,31 @@ export default async function handler(req, res) {
       allergy,
       request_note
     } = req.body;
+    const selectedTime = selected_time || req.body.visit_time;
 
-    if (
-      !visit_date ||
-      !people_count ||
-      !customer_name ||
-      !phone_number
-    ) {
-      return res.status(400).json({
-        error: "来店予定日、人数、お名前、電話番号は必須です。"
-      });
+    
+if (
+  !visit_date ||
+  !selectedTime ||
+  !people_count ||
+  !customer_name ||
+  !phone_number
+) {
+  return res.status(400).json({
+    confirmed: false,
+    success: false,
+    status: "invalid_request",
+    message: "来店予定日、希望時間、人数、お名前、電話番号は必須です。",
+    received: {
+      visit_date: visit_date || "",
+      selected_time: selected_time || "",
+      visit_time: req.body.visit_time || "",
+      people_count: people_count || "",
+      customer_name: customer_name || "",
+      phone_number: phone_number || ""
     }
+  });
+}
 
     if (
       !selected_time ||
