@@ -363,6 +363,7 @@ if (notificationData.success !== true) {
 
     return res.status(500).json({
       confirmed: false,
+      success: false,
       status: "error",
       error:
         error.message ||
