@@ -3,20 +3,12 @@ import crypto from "crypto";
 function base64UrlEncode(input) {
   return Buffer.from(input)
     .toString("base64")
-    .replace(/=/g, "")
     .replace(/\+/g, "-")
-    .replace(/\//g, "_");
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 }
 
-async function getAccessToken() {
-  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-
-  if (!serviceAccountJson) {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON が設定されていません。");
-  }
-
-  const serviceAccount = JSON.parse(serviceAccountJson);
-
+async function getGoogleAccessToken(serviceAccount) {
   const now = Math.floor(Date.now() / 1000);
 
   const header = {
@@ -65,41 +57,76 @@ async function getAccessToken() {
 
   if (!tokenResponse.ok) {
     throw new Error(
-      tokenData.error_description ||
-        tokenData.error ||
+      tokenData?.error_description ||
+        tokenData?.error ||
         "Googleアクセストークンの取得に失敗しました。"
     );
   }
 
   return tokenData.access_token;
 }
+
 function createCalendarDateTime(visitDate, selectedTime) {
   return `${visitDate}T${selectedTime}:00+09:00`;
 }
 
-function addMinutesToDateTime(visitDate, selectedTime, minutesToAdd = 60) {
-  const date = new Date(`${visitDate}T${selectedTime}:00+09:00`);
-  date.setMinutes(date.getMinutes() + minutesToAdd);
+function addMinutesToDateTime(visitDate, selectedTime, minutes) {
+  const start = new Date(createCalendarDateTime(visitDate, selectedTime));
+  const end = new Date(start.getTime() + minutes * 60 * 1000);
+  return end.toISOString();
+}
 
-  const formatter = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Asia/Tokyo",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false
+function isOverlapping(startA, endA, startB, endB) {
+  return startA < endB && endA > startB;
+}
+
+async function checkCalendarConflict({
+  accessToken,
+  calendarId,
+  visit_date,
+  selected_time
+}) {
+  const startDateTime = createCalendarDateTime(visit_date, selected_time);
+  const endDateTime = addMinutesToDateTime(visit_date, selected_time, 60);
+
+  const url =
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(
+      calendarId
+    )}/events` +
+    `?timeMin=${encodeURIComponent(startDateTime)}` +
+    `&timeMax=${encodeURIComponent(endDateTime)}` +
+    `&singleEvents=true` +
+    `&orderBy=startTime`;
+
+  const response = await fetch(url, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${accessToken}`
+    }
   });
 
-  const parts = formatter.formatToParts(date);
-  const values = {};
+  const data = await response.json();
 
-  for (const part of parts) {
-    values[part.type] = part.value;
+  if (!response.ok) {
+    throw new Error(
+      data?.error?.message ||
+        "Googleカレンダーの予定確認に失敗しました。"
+    );
   }
 
-  return `${values.year}-${values.month}-${values.day}T${values.hour}:${values.minute}:${values.second}+09:00`;
+  const events = data.items || [];
+
+  const targetStart = new Date(startDateTime);
+  const targetEnd = new Date(endDateTime);
+
+  return events.some((event) => {
+    if (!event.start || !event.end) return false;
+
+    const eventStart = new Date(event.start.dateTime || event.start.date);
+    const eventEnd = new Date(event.end.dateTime || event.end.date);
+
+    return isOverlapping(targetStart, targetEnd, eventStart, eventEnd);
+  });
 }
 
 async function createGoogleCalendarEvent({
@@ -137,16 +164,22 @@ async function createGoogleCalendarEvent({
 
   const accessToken = await getGoogleAccessToken(serviceAccount);
 
-  const startDateTime = createCalendarDateTime(
+  const isAlreadyBooked = await checkCalendarConflict({
+    accessToken,
+    calendarId,
     visit_date,
     selected_time
-  );
+  });
 
-  const endDateTime = addMinutesToDateTime(
-    visit_date,
-    selected_time,
-    60
-  );
+  if (isAlreadyBooked) {
+    const error = new Error("選択された時間はすでに予約が入っています。");
+    error.statusCode = 409;
+    error.status = "already_booked";
+    throw error;
+  }
+
+  const startDateTime = createCalendarDateTime(visit_date, selected_time);
+  const endDateTime = addMinutesToDateTime(visit_date, selected_time, 60);
 
   const description = [
     `お名前：${customer_name}様`,
@@ -200,20 +233,40 @@ async function createGoogleCalendarEvent({
   return calendarData;
 }
 
+function getRequestBody(req) {
+  if (!req.body) return {};
+
+  if (typeof req.body === "string") {
+    try {
+      return JSON.parse(req.body);
+    } catch {
+      throw new Error("リクエストJSONの形式が正しくありません。");
+    }
+  }
+
+  return req.body;
+}
+
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({
-      error: "Method Not Allowed"
+      confirmed: false,
+      success: false,
+      status: "error",
+      message: "Method Not Allowed"
     });
   }
 
   try {
+    const body = getRequestBody(req);
+
     const {
       visit_date,
       people_count,
       customer_name,
       phone_number,
-      selected_time: selectedTime,
+      selected_time,
+      visit_time,
       curry_type,
       spice_level,
       rice_size,
@@ -221,35 +274,34 @@ export default async function handler(req, res) {
       quantity,
       allergy,
       request_note
-    } = req.body;
-    const selectedTime = selected_time || req.body.visit_time;
+    } = body;
 
-    
-if (
-  !visit_date ||
-  !selectedTime ||
-  !people_count ||
-  !customer_name ||
-  !phone_number
-) {
-  return res.status(400).json({
-    confirmed: false,
-    success: false,
-    status: "invalid_request",
-    message: "来店予定日、希望時間、人数、お名前、電話番号は必須です。",
-    received: {
-      visit_date: visit_date || "",
-      selected_time: selected_time || "",
-      visit_time: req.body.visit_time || "",
-      people_count: people_count || "",
-      customer_name: customer_name || "",
-      phone_number: phone_number || ""
-    }
-  });
-}
-    
+    const selectedTime = selected_time || visit_time;
+
     if (
-      !selected_time ||
+      !visit_date ||
+      !selectedTime ||
+      !people_count ||
+      !customer_name ||
+      !phone_number
+    ) {
+      return res.status(400).json({
+        confirmed: false,
+        success: false,
+        status: "invalid_request",
+        message: "来店予定日、希望時間、人数、お名前、電話番号は必須です。",
+        received: {
+          visit_date: visit_date || "",
+          selected_time: selected_time || "",
+          visit_time: visit_time || "",
+          people_count: people_count || "",
+          customer_name: customer_name || "",
+          phone_number: phone_number || ""
+        }
+      });
+    }
+
+    if (
       !curry_type ||
       !spice_level ||
       !rice_size ||
@@ -258,18 +310,23 @@ if (
       !allergy
     ) {
       return res.status(400).json({
-        error: "希望時間とメニュー内容を入力してください。"
+        confirmed: false,
+        success: false,
+        status: "invalid_request",
+        message: "希望時間とメニュー内容を入力してください。"
       });
     }
 
     const difyApiKey = process.env.DIFY_API_KEY;
     const difyApiUrl =
-      process.env.DIFY_API_URL ||
-      "https://api.dify.ai/v1/chat-messages";
+      process.env.DIFY_API_URL || "https://api.dify.ai/v1/chat-messages";
 
     if (!difyApiKey) {
       return res.status(500).json({
-        error: "DIFY_API_KEY が設定されていません。"
+        confirmed: false,
+        success: false,
+        status: "error",
+        message: "DIFY_API_KEY が設定されていません。"
       });
     }
 
@@ -279,7 +336,7 @@ if (
         people_count,
         customer_name,
         phone_number,
-        selected_time,
+        selected_time: selectedTime,
         curry_type,
         spice_level,
         rice_size,
@@ -308,72 +365,84 @@ if (
 
     if (!difyResponse.ok) {
       return res.status(difyResponse.status).json({
-        error:
-          difyData.message ||
-          "Dify APIへの送信に失敗しました。",
+        confirmed: false,
+        success: false,
+        status: "error",
+        message: difyData.message || "Dify APIへの送信に失敗しました。",
         details: difyData
       });
     }
 
     const calendarEvent = await createGoogleCalendarEvent({
-  visit_date,
-  people_count,
-  customer_name,
-  phone_number,
-  selected_time: selectedTime,
-  curry_type,
-  spice_level,
-  rice_size,
-  topping,
-  quantity,
-  allergy,
-  request_note
-});
+      visit_date,
+      people_count,
+      customer_name,
+      phone_number,
+      selected_time: selectedTime,
+      curry_type,
+      spice_level,
+      rice_size,
+      topping,
+      quantity,
+      allergy,
+      request_note
+    });
 
+    const appsScriptUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
 
-const appsScriptUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
+    if (!appsScriptUrl) {
+      throw new Error("APPS_SCRIPT_WEB_APP_URL が設定されていません。");
+    }
 
-if (!appsScriptUrl) {
-  throw new Error("APPS_SCRIPT_WEB_APP_URL が設定されていません。");
-}
+    const notificationResponse = await fetch(appsScriptUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        visit_date,
+        selected_time: selectedTime,
+        people_count,
+        customer_name,
+        phone_number,
+        curry_type,
+        spice_level,
+        rice_size,
+        topping,
+        quantity,
+        allergy,
+        request_note: request_note || "追加事項なし"
+      })
+    });
 
-const notificationResponse = await fetch(appsScriptUrl, {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json"
-  },
-  body: JSON.stringify({
-    visit_date,
-    selected_time,
-    people_count,
-    customer_name,
-    phone_number,
-    curry_type,
-    spice_level,
-    rice_size,
-    topping,
-    quantity,
-    allergy,
-    request_note: request_note || "追加事項なし"
-  })
-});
+    if (!notificationResponse.ok) {
+      throw new Error("店舗への予約通知に失敗しました。");
+    }
 
-if (!notificationResponse.ok) {
-  throw new Error("店舗への予約通知に失敗しました。");
-}
+    const notificationData = await notificationResponse.json();
 
-const notificationData = await notificationResponse.json();
+    if (notificationData.success !== true) {
+      throw new Error(
+        notificationData.error || "店舗への予約通知に失敗しました。"
+      );
+    }
 
-if (notificationData.success !== true) {
-  throw new Error(
-    notificationData.error || "店舗への予約通知に失敗しました。"
-  );
-}    
     return res.status(200).json({
       confirmed: true,
+      success: true,
       status: "confirmed",
-      message:
-        "ご予約ありがとうございます。ご来店お待ちしております。",
+      message: "ご予約ありがとうございます。ご来店お待ちしております。",
+      visit_date,
+      selected_time: selectedTime,
+      people_count,
+      customer_name,
+      curry_type,
+      spice_level,
+      rice_size,
+      topping,
+      quantity,
+      allergy,
+      request_note: request_note || "追加事項なし",
       answer: difyData.answer || "",
       conversation_id: difyData.conversation_id || "",
       message_id: difyData.message_id || "",
@@ -382,13 +451,21 @@ if (notificationData.success !== true) {
   } catch (error) {
     console.error("Reservation error:", error);
 
-    return res.status(500).json({
+    if (error.status === "already_booked") {
+      return res.status(409).json({
+        confirmed: false,
+        success: false,
+        status: "already_booked",
+        message: "選択された時間はすでに予約が入っています。別の時間をお選びください。"
+      });
+    }
+
+    return res.status(error.statusCode || 500).json({
       confirmed: false,
       success: false,
       status: "error",
-      error:
-        error.message ||
-        "予約処理中にエラーが発生しました。"
+      message: "予約処理に失敗しました。",
+      error: error.message || "予約処理中にエラーが発生しました。"
     });
   }
 }
