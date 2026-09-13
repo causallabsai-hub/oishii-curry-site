@@ -96,7 +96,9 @@ async function checkCalendarConflict({
     `?timeMin=${encodeURIComponent(startDateTime)}` +
     `&timeMax=${encodeURIComponent(endDateTime)}` +
     `&singleEvents=true` +
-    `&orderBy=startTime`;
+    `&orderBy=startTime` +
+    `&showDeleted=false` +
+    `&timeZone=Asia/Tokyo`;
 
   const response = await fetch(url, {
     method: "GET",
@@ -120,10 +122,12 @@ async function checkCalendarConflict({
   const targetEnd = new Date(endDateTime);
 
   return events.some((event) => {
+    if (event.status === "cancelled") return false;
     if (!event.start || !event.end) return false;
+    if (!event.start.dateTime || !event.end.dateTime) return false;
 
-    const eventStart = new Date(event.start.dateTime || event.start.date);
-    const eventEnd = new Date(event.end.dateTime || event.end.date);
+    const eventStart = new Date(event.start.dateTime);
+    const eventEnd = new Date(event.end.dateTime);
 
     return isOverlapping(targetStart, targetEnd, eventStart, eventEnd);
   });
@@ -134,6 +138,7 @@ async function createGoogleCalendarEvent({
   people_count,
   customer_name,
   phone_number,
+  email,
   selected_time,
   curry_type,
   spice_level,
@@ -184,6 +189,7 @@ async function createGoogleCalendarEvent({
   const description = [
     `お名前：${customer_name}様`,
     `電話番号：${phone_number}`,
+    `メールアドレス：${email}`,
     `人数：${people_count}名`,
     `カレー：${curry_type}`,
     `辛さ：${spice_level}`,
@@ -233,6 +239,94 @@ async function createGoogleCalendarEvent({
   return calendarData;
 }
 
+function normalizePhone(phoneNumber) {
+  return String(phoneNumber || "").replace(/[^0-9]/g, "");
+}
+
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+async function saveReservationToSupabase({
+  visit_date,
+  selected_time,
+  people_count,
+  customer_name,
+  phone_number,
+  email,
+  curry_type,
+  spice_level,
+  rice_size,
+  topping,
+  quantity,
+  allergy,
+  request_note,
+  calendar_event_id
+}) {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl) {
+    throw new Error("SUPABASE_URL が設定されていません。");
+  }
+
+  if (!supabaseKey) {
+    throw new Error("SUPABASE_ANON_KEY が設定されていません。");
+  }
+
+  const response = await fetch(`${supabaseUrl}/rest/v1/reservations`, {
+    method: "POST",
+    headers: {
+      apikey: supabaseKey,
+      Authorization: `Bearer ${supabaseKey}`,
+      "Content-Type": "application/json",
+      Prefer: "return=representation"
+    },
+    body: JSON.stringify({
+      customer_name,
+      phone_number,
+      phone_normalized: normalizePhone(phone_number),
+      email,
+      email_normalized: normalizeEmail(email),
+      visit_date,
+      selected_time,
+      people_count: Number(people_count),
+      curry_type,
+      spice_level,
+      rice_size,
+      topping,
+      quantity: Number(quantity),
+      allergy,
+      request_note: request_note || "追加事項なし",
+      status: "confirmed",
+      calendar_event_id
+    })
+  });
+
+  const text = await response.text();
+
+  let data;
+
+  try {
+    data = JSON.parse(text);
+  } catch {
+    throw new Error(
+      "SupabaseからJSONではない応答が返りました。SUPABASE_URLとSUPABASE_ANON_KEYを確認してください。"
+    );
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      data?.message ||
+        data?.error ||
+        data?.details ||
+        "Supabaseへの予約保存に失敗しました。"
+    );
+  }
+
+  return Array.isArray(data) ? data[0] : data;
+}
+
 function getRequestBody(req) {
   if (!req.body) return {};
 
@@ -265,6 +359,7 @@ export default async function handler(req, res) {
       people_count,
       customer_name,
       phone_number,
+      email,
       selected_time,
       visit_time,
       curry_type,
@@ -283,20 +378,23 @@ export default async function handler(req, res) {
       !selectedTime ||
       !people_count ||
       !customer_name ||
-      !phone_number
+      !phone_number ||
+      !email
     ) {
       return res.status(400).json({
         confirmed: false,
         success: false,
         status: "invalid_request",
-        message: "来店予定日、希望時間、人数、お名前、電話番号は必須です。",
+        message:
+          "来店予定日、希望時間、人数、お名前、電話番号、メールアドレスは必須です。",
         received: {
           visit_date: visit_date || "",
           selected_time: selected_time || "",
           visit_time: visit_time || "",
           people_count: people_count || "",
           customer_name: customer_name || "",
-          phone_number: phone_number || ""
+          phone_number: phone_number || "",
+          email: email || ""
         }
       });
     }
@@ -336,6 +434,7 @@ export default async function handler(req, res) {
         people_count,
         customer_name,
         phone_number,
+        email,
         selected_time: selectedTime,
         curry_type,
         spice_level,
@@ -378,6 +477,7 @@ export default async function handler(req, res) {
       people_count,
       customer_name,
       phone_number,
+      email,
       selected_time: selectedTime,
       curry_type,
       spice_level,
@@ -386,6 +486,23 @@ export default async function handler(req, res) {
       quantity,
       allergy,
       request_note
+    });
+
+    const savedReservation = await saveReservationToSupabase({
+      visit_date,
+      selected_time: selectedTime,
+      people_count,
+      customer_name,
+      phone_number,
+      email,
+      curry_type,
+      spice_level,
+      rice_size,
+      topping,
+      quantity,
+      allergy,
+      request_note,
+      calendar_event_id: calendarEvent.id || ""
     });
 
     const appsScriptUrl = process.env.APPS_SCRIPT_WEB_APP_URL;
@@ -405,13 +522,16 @@ export default async function handler(req, res) {
         people_count,
         customer_name,
         phone_number,
+        email,
         curry_type,
         spice_level,
         rice_size,
         topping,
         quantity,
         allergy,
-        request_note: request_note || "追加事項なし"
+        request_note: request_note || "追加事項なし",
+        reservation_id: savedReservation?.id || "",
+        calendar_event_id: calendarEvent.id || ""
       })
     });
 
@@ -421,31 +541,34 @@ export default async function handler(req, res) {
 
     const notificationText = await notificationResponse.text();
 
-let notificationData;
+    let notificationData;
 
-try {
-  notificationData = JSON.parse(notificationText);
-} catch {
-  throw new Error(
-    "Apps ScriptからJSONではない応答が返りました。APPS_SCRIPT_WEB_APP_URL、デプロイ設定、アクセス権を確認してください。"
-  );
-}
+    try {
+      notificationData = JSON.parse(notificationText);
+    } catch {
+      throw new Error(
+        "Apps ScriptからJSONではない応答が返りました。APPS_SCRIPT_WEB_APP_URLが正しい/execのURLか、Vercelの環境変数が最新か確認してください。"
+      );
+    }
 
-if (notificationData.success !== true) {
-  throw new Error(
-    notificationData.error || "店舗への予約通知に失敗しました。"
-  );
-}
+    if (notificationData.success !== true) {
+      throw new Error(
+        notificationData.error || "店舗への予約通知に失敗しました。"
+      );
+    }
 
     return res.status(200).json({
       confirmed: true,
       success: true,
       status: "confirmed",
       message: "ご予約ありがとうございます。ご来店お待ちしております。",
+      reservation_id: savedReservation?.id || "",
       visit_date,
       selected_time: selectedTime,
       people_count,
       customer_name,
+      phone_number,
+      email,
       curry_type,
       spice_level,
       rice_size,
@@ -466,7 +589,8 @@ if (notificationData.success !== true) {
         confirmed: false,
         success: false,
         status: "already_booked",
-        message: "選択された時間はすでに予約が入っています。別の時間をお選びください。"
+        message:
+          "選択された時間はすでに予約が入っています。別の時間をお選びください。"
       });
     }
 
