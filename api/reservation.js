@@ -208,22 +208,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const {
-      visit_date,
-      people_count,
-      customer_name,
-      phone_number,
-      selected_time: selectedTime,
-      curry_type,
-      spice_level,
-      rice_size,
-      topping,
-      quantity,
-      allergy,
-      request_note
-    } = req.body;
-    const selectedTime = selected_time || req.body.visit_time;
+  const {
+    visit_date,
+    people_count,
+    customer_name,
+    phone_number,
+    selected_time,
+    curry_type,
+    spice_level,
+    rice_size,
+    topping,
+    quantity,
+    allergy,
+    request_note
+  } = req.body;
 
+  const selectedTime = selected_time || req.body.visit_time;
     
 if (
   !visit_date ||
