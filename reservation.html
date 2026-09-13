@@ -3,253 +3,303 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>おいしいカレー屋 予約フォーム</title>
+  <title>おいしいカレー屋｜来店予約</title>
+
   <style>
     body {
+      margin: 0;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: #fff8ee;
-      color: #2b1a0f;
-      margin: 0;
-      padding: 0;
+      background: #fff8ed;
+      color: #333;
     }
 
-    header {
-      background: #b94b18;
-      color: #fff;
-      padding: 24px 16px;
-      text-align: center;
-    }
-
-    header h1 {
-      margin: 0 0 8px;
-      font-size: 24px;
-    }
-
-    header p {
-      margin: 0;
-      font-size: 14px;
-    }
-
-    main {
-      max-width: 720px;
+    .container {
+      max-width: 760px;
       margin: 0 auto;
       padding: 24px 16px 48px;
     }
 
     .card {
-      background: #fff;
+      background: #ffffff;
       border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-      margin-bottom: 20px;
+      padding: 24px;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
     }
 
-    h2 {
-      margin-top: 0;
-      font-size: 20px;
+    h1 {
+      margin: 0 0 12px;
+      color: #8a4b12;
+      font-size: 28px;
+      text-align: center;
+    }
+
+    .lead {
+      text-align: center;
+      margin-bottom: 24px;
+      line-height: 1.7;
+      color: #555;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
     }
 
     label {
       display: block;
       font-weight: 700;
-      margin-top: 14px;
       margin-bottom: 6px;
+      color: #4a2b12;
     }
 
-    input, select, textarea, button {
+    input,
+    select,
+    textarea {
       width: 100%;
       box-sizing: border-box;
-      font-size: 16px;
       padding: 12px;
-      border-radius: 10px;
-      border: 1px solid #d6c4b5;
+      border: 1px solid #d8c4aa;
+      border-radius: 8px;
+      font-size: 16px;
       background: #fff;
     }
 
     textarea {
-      min-height: 80px;
+      min-height: 90px;
       resize: vertical;
     }
 
-    button {
-      margin-top: 20px;
-      background: #b94b18;
-      color: #fff;
-      border: none;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-
-    .result {
-      white-space: pre-wrap;
-      line-height: 1.7;
-      background: #fffdf8;
-      border: 1px solid #ead7c4;
-      border-radius: 12px;
-      padding: 16px;
-      min-height: 80px;
+    .required {
+      color: #d23b2d;
+      font-size: 13px;
+      margin-left: 4px;
     }
 
     .note {
-      font-size: 14px;
-      color: #6b4a35;
-      line-height: 1.6;
+      font-size: 13px;
+      color: #777;
+      margin-top: 6px;
+      line-height: 1.5;
     }
 
-    .back-link {
-      display: inline-block;
-      margin-bottom: 16px;
-      color: #b94b18;
+    button {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 999px;
+      background: #d97706;
+      color: #fff;
+      font-size: 17px;
       font-weight: 700;
-      text-decoration: none;
+      cursor: pointer;
+      margin-top: 12px;
     }
 
-    .back-link:hover {
-      text-decoration: underline;
+    button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
     }
 
-.reservation-status {
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 14px;
-      color: #b94b18;
+    #result {
+      margin-top: 24px;
+      padding: 16px;
+      border-radius: 12px;
+      background: #fff3dc;
+      white-space: pre-wrap;
+      line-height: 1.7;
+    }
+
+    .reservation-status {
+      display: inline-block;
+      background: #16a34a;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-weight: 700;
+      margin-bottom: 12px;
     }
 
     .reservation-message {
+      font-size: 18px;
       font-weight: 700;
-      margin-bottom: 16px;
+      color: #8a4b12;
+      margin-bottom: 12px;
     }
 
     .menu-button {
-      display: block;
-      width: 100%;
-      box-sizing: border-box;
-      margin-top: 20px;
-      padding: 14px;
-      border-radius: 10px;
-      background: #b94b18;
+      display: inline-block;
+      margin-top: 16px;
+      padding: 10px 16px;
+      background: #8a4b12;
       color: #fff;
-      font-weight: 700;
-      text-align: center;
       text-decoration: none;
+      border-radius: 999px;
+      font-weight: 700;
     }
-
-    .menu-button:hover {
-      opacity: 0.9;
-    }
-    
   </style>
 </head>
+
 <body>
-  <header>
-    <h1>おいしいカレー屋</h1>
-    <p>予約フォーム</p>
-  </header>
+  <div class="container">
+    <div class="card">
+      <h1>おいしいカレー屋｜来店予約</h1>
 
-  <main>
-    <a class="back-link" href="https://causallabsai-hub.github.io/oishii-curry-site/">
-      ← メニューサイトへ戻る
-    </a>
-
-    <section class="card">
-      <h2>予約内容を入力してください</h2>
-      <p class="note">
-        空いている日時を選んで、予約内容を入力してください。
+      <p class="lead">
+        ご来店日・時間・メニュー内容を入力してください。<br />
+        空き時間を確認してから、予約を確定します。
       </p>
 
       <form id="reservationForm">
-        <label for="visit_date">来店予定日</label>
-        <select id="visit_date" name="visit_date" required>
-          <option value="">空いている日を選択してください</option>
-        </select>
+        <div class="form-group">
+          <label for="visit_date">来店予定日 <span class="required">必須</span></label>
+          <select id="visit_date" name="visit_date" required>
+            <option value="">空き状況を読み込み中です...</option>
+          </select>
+        </div>
 
-        <label for="selected_time">希望時間</label>
-        <select id="selected_time" name="selected_time" required disabled>
-          <option value="">先に来店予定日を選択してください</option>
-        </select>
+        <div class="form-group">
+          <label for="selected_time">希望時間 <span class="required">必須</span></label>
+          <select id="selected_time" name="selected_time" required disabled>
+            <option value="">先に来店予定日を選択してください</option>
+          </select>
+          <div class="note">予約枠は60分です。</div>
+        </div>
 
-        <label for="people_count">人数</label>
-        <input id="people_count" name="people_count" type="number" min="1" max="20" placeholder="例：2" required />
+        <div class="form-group">
+          <label for="people_count">人数 <span class="required">必須</span></label>
+          <input
+            type="number"
+            id="people_count"
+            name="people_count"
+            min="1"
+            max="20"
+            required
+            placeholder="例：2"
+          />
+        </div>
 
-        <label for="customer_name">お名前</label>
-        <input id="customer_name" name="customer_name" type="text" placeholder="例：伊藤" required />
+        <div class="form-group">
+          <label for="customer_name">お名前 <span class="required">必須</span></label>
+          <input
+            type="text"
+            id="customer_name"
+            name="customer_name"
+            required
+            placeholder="例：山田太郎"
+          />
+        </div>
 
-        <label for="phone_number">電話番号</label>
-        <input id="phone_number" name="phone_number" type="tel" placeholder="例：03-1234-5678" required />
+        <div class="form-group">
+          <label for="phone_number">電話番号 <span class="required">必須</span></label>
+          <input
+            type="tel"
+            id="phone_number"
+            name="phone_number"
+            required
+            placeholder="例：09012345678"
+          />
+        </div>
 
-　　　　<label for="email">メールアドレス</label>
-<input
-  type="email"
-  id="email"
-  name="email"
-  required
-  placeholder="example@example.com"
-/>
+        <div class="form-group">
+          <label for="email">メールアドレス <span class="required">必須</span></label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            required
+            placeholder="例：example@example.com"
+          />
+          <div class="note">
+            マイページのログイン・予約確認で使用します。
+          </div>
+        </div>
 
-        <label for="curry_type">カレーの種類</label>
-        <select id="curry_type" name="curry_type" required>
-          <option value="">選択してください</option>
-          <option value="おいしいチキンカレー">おいしいチキンカレー</option>
-          <option value="野菜たっぷりカレー">野菜たっぷりカレー</option>
-          <option value="ビーフカレー">ビーフカレー</option>
-          <option value="キーマカレー">キーマカレー</option>
-          <option value="お子さまカレー">お子さまカレー</option>
-        </select>
+        <div class="form-group">
+          <label for="curry_type">カレーの種類 <span class="required">必須</span></label>
+          <select id="curry_type" name="curry_type" required>
+            <option value="">選択してください</option>
+            <option value="おいしいチキンカレー">おいしいチキンカレー</option>
+            <option value="野菜たっぷりカレー">野菜たっぷりカレー</option>
+            <option value="ビーフカレー">ビーフカレー</option>
+            <option value="キーマカレー">キーマカレー</option>
+            <option value="お子さまカレー">お子さまカレー</option>
+          </select>
+        </div>
 
-        <label for="spice_level">辛さ</label>
-        <select id="spice_level" name="spice_level" required>
-          <option value="">選択してください</option>
-          <option value="0辛：辛くない">0辛：辛くない</option>
-          <option value="1辛：甘口">1辛：甘口</option>
-          <option value="2辛：中辛">2辛：中辛</option>
-          <option value="3辛：辛口">3辛：辛口</option>
-          <option value="4辛：かなり辛い">4辛：かなり辛い</option>
-          <option value="5辛：激辛">5辛：激辛</option>
-        </select>
+        <div class="form-group">
+          <label for="spice_level">辛さ <span class="required">必須</span></label>
+          <select id="spice_level" name="spice_level" required>
+            <option value="">選択してください</option>
+            <option value="0辛">0辛</option>
+            <option value="1辛">1辛</option>
+            <option value="2辛">2辛</option>
+            <option value="3辛">3辛</option>
+            <option value="4辛">4辛</option>
+            <option value="5辛">5辛</option>
+          </select>
+        </div>
 
-        <label for="rice_size">ライス量</label>
-        <select id="rice_size" name="rice_size" required>
-          <option value="">選択してください</option>
-          <option value="小盛">小盛</option>
-          <option value="普通">普通</option>
-          <option value="大盛">大盛</option>
-          <option value="特盛">特盛</option>
-        </select>
+        <div class="form-group">
+          <label for="rice_size">ライス量 <span class="required">必須</span></label>
+          <select id="rice_size" name="rice_size" required>
+            <option value="">選択してください</option>
+            <option value="少なめ">少なめ</option>
+            <option value="普通">普通</option>
+            <option value="大盛">大盛</option>
+          </select>
+        </div>
 
-        <label for="topping">トッピング</label>
-        <select id="topping" name="topping" required>
-          <option value="">選択してください</option>
-          <option value="なし">なし</option>
-          <option value="チーズ">チーズ</option>
-          <option value="温泉卵">温泉卵</option>
-          <option value="からあげ">からあげ</option>
-          <option value="野菜増し">野菜増し</option>
-          <option value="カツ">カツ</option>
-        </select>
+        <div class="form-group">
+          <label for="topping">トッピング <span class="required">必須</span></label>
+          <select id="topping" name="topping" required>
+            <option value="">選択してください</option>
+            <option value="なし">なし</option>
+            <option value="からあげ">からあげ</option>
+            <option value="チーズ">チーズ</option>
+            <option value="温玉">温玉</option>
+            <option value="野菜追加">野菜追加</option>
+          </select>
+        </div>
 
-        <label for="quantity">数量</label>
-        <input id="quantity" name="quantity" type="number" min="1" value="1" required />
+        <div class="form-group">
+          <label for="quantity">数量 <span class="required">必須</span></label>
+          <input
+            type="number"
+            id="quantity"
+            name="quantity"
+            min="1"
+            max="20"
+            required
+            placeholder="例：1"
+          />
+        </div>
 
-        <label for="allergy">アレルギー有無</label>
-        <input id="allergy" name="allergy" type="text" placeholder="例：なし / 卵アレルギーあり" required />
+        <div class="form-group">
+          <label for="allergy">アレルギー有無 <span class="required">必須</span></label>
+          <select id="allergy" name="allergy" required>
+            <option value="">選択してください</option>
+            <option value="なし">なし</option>
+            <option value="あり">あり</option>
+          </select>
+          <div class="note">
+            アレルギーがある場合は、その他追加事項に内容をご記入ください。
+          </div>
+        </div>
 
-        <label for="request_note">その他追加事項</label>
-        <textarea id="request_note" name="request_note" placeholder="例：スプーン多め、入口近くの席希望"></textarea>
+        <div class="form-group">
+          <label for="request_note">その他追加事項</label>
+          <textarea
+            id="request_note"
+            name="request_note"
+            placeholder="例：アレルギー内容、席の希望、苦手な食材など"
+          ></textarea>
+        </div>
 
         <button id="submitButton" type="submit">予約内容を送信する</button>
       </form>
-    </section>
 
-    <section class="card">
-      <h2>予約結果</h2>
-      <div id="result" class="result">ここに予約結果が表示されます。</div>
-    </section>
-  </main>
+      <div id="result"></div>
+    </div>
+  </div>
 
   <script>
     const form = document.getElementById("reservationForm");
@@ -263,8 +313,12 @@
 
     async function loadAvailability() {
       try {
-        visitDateSelect.innerHTML = '<option value="">空き状況を読み込み中です...</option>';
-        selectedTimeSelect.innerHTML = '<option value="">先に来店予定日を選択してください</option>';
+        visitDateSelect.innerHTML =
+          '<option value="">空き状況を読み込み中です...</option>';
+
+        selectedTimeSelect.innerHTML =
+          '<option value="">先に来店予定日を選択してください</option>';
+
         selectedTimeSelect.disabled = true;
 
         const response = await fetch("/api/availability");
@@ -276,10 +330,12 @@
         const data = await response.json();
         availabilityData = data.available_dates || [];
 
-        visitDateSelect.innerHTML = '<option value="">空いている日を選択してください</option>';
+        visitDateSelect.innerHTML =
+          '<option value="">空いている日を選択してください</option>';
 
         if (availabilityData.length === 0) {
-          visitDateSelect.innerHTML = '<option value="">現在選択できる日付がありません</option>';
+          visitDateSelect.innerHTML =
+            '<option value="">現在選択できる日付がありません</option>';
           return;
         }
 
@@ -290,31 +346,40 @@
           visitDateSelect.appendChild(option);
         });
       } catch (error) {
-        visitDateSelect.innerHTML = '<option value="">空き状況を取得できませんでした</option>';
-        result.textContent = "空き状況の取得に失敗しました。\n時間をおいて再度お試しください。";
+        visitDateSelect.innerHTML =
+          '<option value="">空き状況を取得できませんでした</option>';
+
+        result.textContent =
+          "空き状況の取得に失敗しました。\n時間をおいて再度お試しください。";
       }
     }
 
     visitDateSelect.addEventListener("change", () => {
       const selectedDate = visitDateSelect.value;
-      const dateData = availabilityData.find((item) => item.date === selectedDate);
+
+      const dateData = availabilityData.find(
+        (item) => item.date === selectedDate
+      );
 
       selectedTimeSelect.innerHTML = "";
 
       if (!selectedDate) {
         selectedTimeSelect.disabled = true;
-        selectedTimeSelect.innerHTML = '<option value="">先に来店予定日を選択してください</option>';
+        selectedTimeSelect.innerHTML =
+          '<option value="">先に来店予定日を選択してください</option>';
         return;
       }
 
       if (!dateData || !dateData.slots || dateData.slots.length === 0) {
         selectedTimeSelect.disabled = true;
-        selectedTimeSelect.innerHTML = '<option value="">空き時間がありません</option>';
+        selectedTimeSelect.innerHTML =
+          '<option value="">空き時間がありません</option>';
         return;
       }
 
       selectedTimeSelect.disabled = false;
-      selectedTimeSelect.innerHTML = '<option value="">空いている時間を選択してください</option>';
+      selectedTimeSelect.innerHTML =
+        '<option value="">空いている時間を選択してください</option>';
 
       dateData.slots.forEach((slot) => {
         const option = document.createElement("option");
@@ -324,7 +389,7 @@
       });
     });
 
-     function showReservationResult(payload) {
+    function showReservationResult(payload, responseData) {
       result.textContent = "";
 
       const status = document.createElement("div");
@@ -333,17 +398,20 @@
 
       const message = document.createElement("div");
       message.className = "reservation-message";
-      message.textContent = "ご予約ありがとうございます。ご来店お待ちしております。";
+      message.textContent =
+        responseData?.message || "ご予約ありがとうございます。ご来店お待ちしております。";
 
       const details = document.createElement("div");
 
       details.textContent =
 `【予約内容】
+予約ID：${responseData?.reservation_id || ""}
 来店予定日：${payload.visit_date}
 希望時間：${payload.selected_time}
 人数：${payload.people_count}名様
 お名前：${payload.customer_name}様
 電話番号：${payload.phone_number}
+メールアドレス：${payload.email}
 
 【来店時の提供予定メニュー】
 カレーの種類：${payload.curry_type}
@@ -381,6 +449,7 @@
         people_count: Number(formData.get("people_count")),
         customer_name: formData.get("customer_name"),
         phone_number: formData.get("phone_number"),
+        email: formData.get("email"),
         curry_type: formData.get("curry_type"),
         spice_level: formData.get("spice_level"),
         rice_size: formData.get("rice_size"),
@@ -403,19 +472,33 @@
           body: JSON.stringify(payload)
         });
 
-        const data = await response.json();
+        const responseText = await response.text();
+
+        let data;
+
+        try {
+          data = JSON.parse(responseText);
+        } catch {
+          throw new Error(
+            "予約APIからJSONではない応答が返りました。api/reservation.js または Vercelの環境変数を確認してください。"
+          );
+        }
 
         clearTimeout(processingTimer);
 
         if (!response.ok) {
-          throw new Error(data.error || "予約処理に失敗しました。");
+          throw new Error(
+            data.error || data.message || "予約処理に失敗しました。"
+          );
         }
 
         if (data.confirmed !== true) {
-          throw new Error("Googleカレンダーへの予約登録を確認できませんでした。");
+          throw new Error(
+            "Googleカレンダーへの予約登録を確認できませんでした。"
+          );
         }
 
-        showReservationResult(payload);
+        showReservationResult(payload, data);
 
         button.textContent = "予約確定しました";
       } catch (error) {
@@ -431,7 +514,6 @@
       }
     });
 
-        
     loadAvailability();
   </script>
 </body>
