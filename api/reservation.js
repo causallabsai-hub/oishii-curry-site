@@ -419,13 +419,23 @@ export default async function handler(req, res) {
       throw new Error("店舗への予約通知に失敗しました。");
     }
 
-    const notificationData = await notificationResponse.json();
+    const notificationText = await notificationResponse.text();
 
-    if (notificationData.success !== true) {
-      throw new Error(
-        notificationData.error || "店舗への予約通知に失敗しました。"
-      );
-    }
+let notificationData;
+
+try {
+  notificationData = JSON.parse(notificationText);
+} catch {
+  throw new Error(
+    "Apps ScriptからJSONではない応答が返りました。APPS_SCRIPT_WEB_APP_URL、デプロイ設定、アクセス権を確認してください。"
+  );
+}
+
+if (notificationData.success !== true) {
+  throw new Error(
+    notificationData.error || "店舗への予約通知に失敗しました。"
+  );
+}
 
     return res.status(200).json({
       confirmed: true,
