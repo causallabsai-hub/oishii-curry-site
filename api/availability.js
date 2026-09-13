@@ -167,26 +167,37 @@ async function getCalendarEvents({
 
 function getAvailableSlotsForDate(dateString, events) {
   const bookedEvents = events
-    .filter((event) => event.start && event.end)
+    .filter((event) => {
+      if (event.status === "cancelled") return false;
+      if (!event.start || !event.end) return false;
+
+      // 時間指定の予定だけ対象にする
+      // 終日予定 event.start.date は除外
+      if (!event.start.dateTime || !event.end.dateTime) return false;
+
+      return true;
+    })
     .map((event) => {
       return {
-        start: new Date(event.start.dateTime || event.start.date),
-        end: new Date(event.end.dateTime || event.end.date)
+        summary: event.summary || "",
+        start: new Date(event.start.dateTime),
+        end: new Date(event.end.dateTime)
       };
     });
 
   return availableSlots.filter((slot) => {
-    const slotStart = new Date(createCalendarDateTime(dateString, slot));
-    const slotEnd = addMinutesToDate(slotStart, RESERVATION_MINUTES);
+    const slotStart = new Date(`${dateString}T${slot}:00+09:00`);
+    const slotEnd = new Date(
+      slotStart.getTime() + RESERVATION_MINUTES * 60 * 1000
+    );
 
     const isBooked = bookedEvents.some((event) => {
-      return isOverlapping(slotStart, slotEnd, event.start, event.end);
+      return slotStart < event.end && slotEnd > event.start;
     });
 
     return !isBooked;
   });
 }
-
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({
