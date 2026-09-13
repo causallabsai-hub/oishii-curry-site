@@ -249,18 +249,21 @@ if (
 }
     
     if (
-      !selected_time ||
-      !curry_type ||
-      !spice_level ||
-      !rice_size ||
-      !topping ||
-      !quantity ||
-      !allergy
-    ) {
-      return res.status(400).json({
-        error: "希望時間とメニュー内容を入力してください。"
-      });
-    }
+  !selectedTime ||
+  !curry_type ||
+  !spice_level ||
+  !rice_size ||
+  !topping ||
+  !quantity ||
+  !allergy
+) {
+  return res.status(400).json({
+    confirmed: false,
+    success: false,
+    status: "invalid_request",
+    message: "希望時間とメニュー内容を入力してください。"
+  });
+}
 
     const difyApiKey = process.env.DIFY_API_KEY;
     const difyApiUrl =
@@ -274,20 +277,20 @@ if (
     }
 
     const difyPayload = {
-      inputs: {
-        visit_date,
-        people_count,
-        customer_name,
-        phone_number,
-        selected_time,
-        curry_type,
-        spice_level,
-        rice_size,
-        topping,
-        quantity,
-        allergy,
-        request_note: request_note || "追加事項なし"
-      },
+inputs: {
+  visit_date,
+  people_count,
+  customer_name,
+  phone_number,
+  selected_time: selectedTime,
+  curry_type,
+  spice_level,
+  rice_size,
+  topping,
+  quantity,
+  allergy,
+  request_note: request_note || "追加事項なし"
+},
       query:
         "予約フォームから送信されました。入力内容をもとに予約作成を進めてください。",
       response_mode: "blocking",
@@ -342,20 +345,20 @@ const notificationResponse = await fetch(appsScriptUrl, {
   headers: {
     "Content-Type": "application/json"
   },
-  body: JSON.stringify({
-    visit_date,
-    selected_time,
-    people_count,
-    customer_name,
-    phone_number,
-    curry_type,
-    spice_level,
-    rice_size,
-    topping,
-    quantity,
-    allergy,
-    request_note: request_note || "追加事項なし"
-  })
+body: JSON.stringify({
+  visit_date,
+  selected_time: selectedTime,
+  people_count,
+  customer_name,
+  phone_number,
+  curry_type,
+  spice_level,
+  rice_size,
+  topping,
+  quantity,
+  allergy,
+  request_note: request_note || "追加事項なし"
+})
 });
 
 if (!notificationResponse.ok) {
@@ -370,15 +373,26 @@ if (notificationData.success !== true) {
   );
 }    
     return res.status(200).json({
-      confirmed: true,
-      status: "confirmed",
-      message:
-        "ご予約ありがとうございます。ご来店お待ちしております。",
-      answer: difyData.answer || "",
-      conversation_id: difyData.conversation_id || "",
-      message_id: difyData.message_id || "",
-      calendar_event_id: calendarEvent.id || ""
-    });
+  confirmed: true,
+  success: true,
+  status: "confirmed",
+  message: "ご予約ありがとうございます。ご来店お待ちしております。",
+  visit_date,
+  selected_time: selectedTime,
+  people_count,
+  customer_name,
+  curry_type,
+  spice_level,
+  rice_size,
+  topping,
+  quantity,
+  allergy,
+  request_note: request_note || "追加事項なし",
+  answer: difyData.answer || "",
+  conversation_id: difyData.conversation_id || "",
+  message_id: difyData.message_id || "",
+  calendar_event_id: calendarEvent.id || ""
+});
   } catch (error) {
     console.error("Reservation error:", error);
 
