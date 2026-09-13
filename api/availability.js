@@ -22,7 +22,6 @@ const availableSlots = [
   "20:00",
   "20:30",
   "21:00"
-  
 ];
 
 const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
@@ -32,7 +31,7 @@ const weekdays = ["日", "月", "火", "水", "木", "金", "土"];
 const closedWeekdays = [3];
 
 // 予約枠の長さ
-// reservation.js が60分で登録しているため、空き判定も60分で見ます
+// reservation.js が60分で登録しているため、空き判定も60分
 const RESERVATION_MINUTES = 60;
 
 function base64UrlEncode(input) {
@@ -117,18 +116,6 @@ function formatDateLabel(date) {
   return `${month}/${day}（${weekday}）`;
 }
 
-function createCalendarDateTime(dateString, timeString) {
-  return `${dateString}T${timeString}:00+09:00`;
-}
-
-function addMinutesToDate(date, minutes) {
-  return new Date(date.getTime() + minutes * 60 * 1000);
-}
-
-function isOverlapping(startA, endA, startB, endB) {
-  return startA < endB && endA > startB;
-}
-
 async function getCalendarEvents({
   accessToken,
   calendarId,
@@ -168,18 +155,23 @@ async function getCalendarEvents({
 function getAvailableSlotsForDate(dateString, events) {
   const bookedEvents = events
     .filter((event) => {
-      if (event.status === "cancelled") return false;
-      if (!event.start || !event.end) return false;
+      if (event.status === "cancelled") {
+        return false;
+      }
 
-      // 時間指定の予定だけ対象にする
+      if (!event.start || !event.end) {
+        return false;
+      }
+
       // 終日予定は除外
-      if (!event.start.dateTime || !event.end.dateTime) return false;
+      if (!event.start.dateTime || !event.end.dateTime) {
+        return false;
+      }
 
       return true;
     })
     .map((event) => {
       return {
-        summary: event.summary || "",
         start: new Date(event.start.dateTime),
         end: new Date(event.end.dateTime)
       };
@@ -187,6 +179,7 @@ function getAvailableSlotsForDate(dateString, events) {
 
   return availableSlots.filter((slot) => {
     const slotStart = new Date(`${dateString}T${slot}:00+09:00`);
+
     const slotEnd = new Date(
       slotStart.getTime() + RESERVATION_MINUTES * 60 * 1000
     );
@@ -198,19 +191,7 @@ function getAvailableSlotsForDate(dateString, events) {
     return !isBooked;
   });
 }
-  return availableSlots.filter((slot) => {
-    const slotStart = new Date(`${dateString}T${slot}:00+09:00`);
-    const slotEnd = new Date(
-      slotStart.getTime() + RESERVATION_MINUTES * 60 * 1000
-    );
 
-    const isBooked = bookedEvents.some((event) => {
-      return slotStart < event.end && slotEnd > event.start;
-    });
-
-    return !isBooked;
-  });
-}
 export default async function handler(req, res) {
   if (req.method !== "GET") {
     return res.status(405).json({
@@ -221,15 +202,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-    const calendarId = process.env.GOOGLE_CALENDAR_ID;
+    const serviceAccountJson =
+      process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
+
+    const calendarId =
+      process.env.GOOGLE_CALENDAR_ID;
 
     if (!serviceAccountJson) {
-      throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON が設定されていません。");
+      throw new Error(
+        "GOOGLE_SERVICE_ACCOUNT_JSON が設定されていません。"
+      );
     }
 
     if (!calendarId) {
-      throw new Error("GOOGLE_CALENDAR_ID が設定されていません。");
+      throw new Error(
+        "GOOGLE_CALENDAR_ID が設定されていません。"
+      );
     }
 
     let serviceAccount;
@@ -237,34 +225,44 @@ export default async function handler(req, res) {
     try {
       serviceAccount = JSON.parse(serviceAccountJson);
     } catch {
-      throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON の形式が正しくありません。");
+      throw new Error(
+        "GOOGLE_SERVICE_ACCOUNT_JSON の形式が正しくありません。"
+      );
     }
 
-    const accessToken = await getGoogleAccessToken(serviceAccount);
+    const accessToken =
+      await getGoogleAccessToken(serviceAccount);
 
     const today = new Date();
     const availableDates = [];
 
     for (let i = 0; i < 30; i++) {
       const date = new Date(today);
+
       date.setDate(today.getDate() + i);
 
-      // 水曜定休を除外
+      // 水曜定休
       if (closedWeekdays.includes(date.getDay())) {
         continue;
       }
 
-      const dateString = formatDateValue(date);
+      const dateString =
+        formatDateValue(date);
 
-      const events = await getCalendarEvents({
-        accessToken,
-        calendarId,
-        dateString
-      });
+      const events =
+        await getCalendarEvents({
+          accessToken,
+          calendarId,
+          dateString
+        });
 
-      const slots = getAvailableSlotsForDate(dateString, events);
+      const slots =
+        getAvailableSlotsForDate(
+          dateString,
+          events
+        );
 
-      // 空き時間が1つもない日は表示しない
+      // 空き時間がない日は表示しない
       if (slots.length === 0) {
         continue;
       }
@@ -281,14 +279,21 @@ export default async function handler(req, res) {
       status: "available",
       available_dates: availableDates
     });
+
   } catch (error) {
-    console.error("Availability error:", error);
+    console.error(
+      "Availability error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
       status: "error",
-      message: "空き状況を取得できませんでした。",
-      error: error.message || "空き状況の取得に失敗しました。"
+      message:
+        "空き状況を取得できませんでした。",
+      error:
+        error.message ||
+        "空き状況の取得に失敗しました。"
     });
   }
 }
