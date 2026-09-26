@@ -135,7 +135,7 @@ async function createGoogleCalendarEvent({
     throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON の形式が正しくありません。");
   }
 
-  const accessToken = await getGoogleAccessToken(serviceAccount);
+  const accessToken = await getAccessToken();
 
   const startDateTime = createCalendarDateTime(
     visit_date,
