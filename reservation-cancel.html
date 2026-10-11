@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>予約確認・キャンセル｜おいしいカレー屋</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family:
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+      background: #fff8ed;
+      color: #333;
+    }
+
+    header {
+      background: #b94b18;
+      color: white;
+      text-align: center;
+      padding: 24px 16px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 24px;
+    }
+
+    main {
+      max-width: 700px;
+      margin: 0 auto;
+      padding: 24px 16px 50px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+
+      box-shadow:
+        0 6px 18px
+        rgba(0, 0, 0, 0.08);
+    }
+
+    h2 {
+      margin-top: 0;
+      color: #8a4b12;
+    }
+
+    label {
+      display: block;
+      font-weight: 700;
+      margin-top: 16px;
+      margin-bottom: 6px;
+    }
+
+    input,
+    button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      font-size: 16px;
+      border-radius: 10px;
+    }
+
+    input {
+      border: 1px solid #d8c4aa;
+    }
+
+    button {
+      margin-top: 22px;
+      border: none;
+      color: white;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .search-button {
+      background: #b94b18;
+    }
+
+    .cancel-button {
+      background: #c62828;
+    }
+
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .note {
+      color: #666;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    #result {
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+
+    .reservation-details {
+      background: #fff8ed;
+      border-radius: 12px;
+      padding: 18px;
+      margin-top: 16px;
+    }
+
+    .cancelled {
+      color: #c62828;
+      font-weight: 700;
+    }
+
+    .back-link {
+      display: inline-block;
+      margin-bottom: 18px;
+      color: #b94b18;
+      font-weight: 700;
+      text-decoration: none;
+    }
+  </style>
+</head>
+
+<body>
+
+<header>
+  <h1>予約確認・キャンセル</h1>
+</header>
+
+<main>
+
+  <a
+    class="back-link"
+    href="https://causallabsai-hub.github.io/oishii-curry-site/"
+  >
+    ← メニューに戻る
+  </a>
+
+  <section class="card">
+
+    <h2>予約を確認する</h2>
+
+    <p class="note">
+      予約時に表示された予約ID、
+      メールアドレス、電話番号を入力してください。
+    </p>
+
+    <form id="lookupForm">
+
+      <label for="reservation_id">
+        予約ID
+      </label>
+
+      <input
+        id="reservation_id"
+        type="number"
+        required
+        placeholder="例：1"
+      />
+
+      <label for="email">
+        メールアドレス
+      </label>
+
+      <input
+        id="email"
+        type="email"
+        required
+        placeholder="例：example@gmail.com"
+      />
+
+      <label for="phone_number">
+        電話番号
+      </label>
+
+      <input
+        id="phone_number"
+        type="tel"
+        required
+        placeholder="例：090-1234-5678"
+      />
+
+      <button
+        class="search-button"
+        id="searchButton"
+        type="submit"
+      >
+        予約内容を確認する
+      </button>
+
+    </form>
+
+  </section>
+
+  <section
+    id="reservationCard"
+    class="card"
+    style="display:none;"
+  >
+
+    <h2>予約内容</h2>
+
+    <div id="result"></div>
+
+    <button
+      id="cancelButton"
+      class="cancel-button"
+      type="button"
+    >
+      この予約をキャンセルする
+    </button>
+
+  </section>
+
+</main>
+
+<script>
+
+  const lookupForm =
+    document.getElementById("lookupForm");
+
+  const reservationCard =
+    document.getElementById(
+      "reservationCard"
+    );
+
+  const result =
+    document.getElementById("result");
+
+  const searchButton =
+    document.getElementById(
+      "searchButton"
+    );
+
+  const cancelButton =
+    document.getElementById(
+      "cancelButton"
+    );
+
+  let currentReservation = null;
+
+  function createMenuText(items) {
+
+    if (
+      !Array.isArray(items) ||
+      items.length === 0
+    ) {
+      return "メニュー情報なし";
+    }
+
+    return items
+      .map((item, index) => {
+
+        return (
+`【メニュー${index + 1}】
+カレー：${item.menu_name || ""}
+辛さ：${item.spicy_level || ""}
+ライス量：${item.size || ""}
+数量：${item.quantity || ""}
+${item.notes || ""}`
+        );
+
+      })
+      .join("\n\n");
+  }
+
+
+  lookupForm.addEventListener(
+    "submit",
+    async (event) => {
+
+      event.preventDefault();
+
+      searchButton.disabled = true;
+
+      searchButton.textContent =
+        "確認中...";
+
+      reservationCard.style.display =
+        "block";
+
+      result.textContent =
+        "予約情報を確認しています...";
+
+      cancelButton.style.display =
+        "none";
+
+      const payload = {
+
+        reservation_id:
+          document.getElementById(
+            "reservation_id"
+          ).value,
+
+        email:
+          document.getElementById(
+            "email"
+          ).value,
+
+        phone_number:
+          document.getElementById(
+            "phone_number"
+          ).value
+
+      };
+
+      try {
+
+        const response = await fetch(
+          "/api/reservation-lookup",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body:
+              JSON.stringify(payload)
+          }
+        );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+            "予約情報を確認できませんでした。"
+          );
+        }
+
+        currentReservation = {
+          ...payload,
+          ...data
+        };
+
+        const r = data.reservation;
+        const c = data.customer;
+
+        result.textContent =
+`予約ID：${r.reservation_id}
+
+来店予定日：${r.reservation_date}
+希望時間：${r.reservation_time}
+人数：${r.party_size}名様
+
+お名前：${c.name}様
+電話番号：${c.phone}
+メールアドレス：${c.email}
+
+【予約メニュー】
+${createMenuText(data.items)}
+
+予約状態：${r.status}`;
+
+        if (
+          r.status === "cancelled"
+        ) {
+
+          result.textContent +=
+            "\n\nこの予約はキャンセル済みです。";
+
+          cancelButton.style.display =
+            "none";
+
+        } else {
+
+          cancelButton.style.display =
+            "block";
+        }
+
+      } catch (error) {
+
+        currentReservation = null;
+
+        result.textContent =
+          "予約情報を確認できませんでした。\n" +
+          error.message;
+
+        cancelButton.style.display =
+          "none";
+
+      } finally {
+
+        searchButton.disabled = false;
+
+        searchButton.textContent =
+          "予約内容を確認する";
+      }
+
+    }
+  );
+
+
+  cancelButton.addEventListener(
+    "click",
+    async () => {
+
+      if (!currentReservation) {
+        return;
+      }
+
+      const confirmed = window.confirm(
+        "この予約をキャンセルしますか？\n\nこの操作は元に戻せません。"
+      );
+
+      if (!confirmed) {
+        return;
+      }
+
+      cancelButton.disabled = true;
+
+      cancelButton.textContent =
+        "キャンセル処理中...";
+
+      try {
+
+        const response = await fetch(
+          "/api/reservation-cancel",
+          {
+            method: "POST",
+
+            headers: {
+              "Content-Type":
+                "application/json"
+            },
+
+            body: JSON.stringify({
+
+              reservation_id:
+                currentReservation
+                  .reservation_id,
+
+              email:
+                currentReservation.email,
+
+              phone_number:
+                currentReservation
+                  .phone_number
+
+            })
+          }
+        );
+
+        const data =
+          await response.json();
+
+        if (!response.ok) {
+          throw new Error(
+            data.message ||
+            "キャンセルに失敗しました。"
+          );
+        }
+
+        result.textContent =
+`予約ID：${currentReservation.reservation_id}
+
+予約をキャンセルしました。
+
+Googleカレンダーの予約も
+キャンセルされました。`;
+
+        result.classList.add(
+          "cancelled"
+        );
+
+        cancelButton.style.display =
+          "none";
+
+      } catch (error) {
+
+        alert(
+          "キャンセル処理に失敗しました。\n" +
+          error.message
+        );
+
+        cancelButton.disabled = false;
+
+        cancelButton.textContent =
+          "この予約をキャンセルする";
+      }
+
+    }
+  );
+
+</script>
+
+</body>
+</html>
