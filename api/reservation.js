@@ -658,7 +658,7 @@ export default async function handler(req, res) {
         quantity,
         allergy,
         request_note: request_note || "追加事項なし",
-        reservation_id: savedReservation?.id || "",
+        reservation_id: savedReservation?.reservation_id || "",
         calendar_event_id: calendarEvent.id || ""
       })
     });
@@ -690,7 +690,7 @@ export default async function handler(req, res) {
       success: true,
       status: "confirmed",
       message: "ご予約ありがとうございます。ご来店お待ちしております。",
-      reservation_id: savedReservation?.id || "",
+      reservation_id: savedReservation?.reservation_id || "",
       visit_date,
       selected_time: selectedTime,
       people_count,
