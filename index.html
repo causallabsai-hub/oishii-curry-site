@@ -39,9 +39,49 @@
     }
 
     .reserve-area {
-      text-align: center;
-      margin: 0 0 28px;
-    }
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 0 0 28px;
+}
+
+.reserve-button,
+.mypage-button,
+.cancel-button {
+  display: inline-block;
+  color: #fff;
+  padding: 14px 32px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: bold;
+  font-size: 17px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
+}
+
+.reserve-button {
+  background: #c84f1f;
+}
+
+.reserve-button:hover {
+  background: #a83f16;
+}
+
+.mypage-button {
+  background: #8a4b12;
+}
+
+.mypage-button:hover {
+  background: #69370d;
+}
+
+.cancel-button {
+  background: #b3261e;
+}
+
+.cancel-button:hover {
+  background: #8f1d17;
+}
 
     .reserve-button {
       display: inline-block;
