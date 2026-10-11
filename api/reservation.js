@@ -274,57 +274,185 @@ async function saveReservationToSupabase({
     throw new Error("SUPABASE_ANON_KEY が設定されていません。");
   }
 
-  const response = await fetch(`${supabaseUrl}/rest/v1/reservations`, {
-    method: "POST",
-    headers: {
-      apikey: supabaseKey,
-      Authorization: `Bearer ${supabaseKey}`,
-      "Content-Type": "application/json",
-      Prefer: "return=representation"
-    },
-    body: JSON.stringify({
-      customer_name,
-      phone_number,
-      phone_normalized: normalizePhone(phone_number),
-      email,
-      email_normalized: normalizeEmail(email),
-      visit_date,
-      selected_time,
-      people_count: Number(people_count),
-      curry_type,
-      spice_level,
-      rice_size,
-      topping,
-      quantity: Number(quantity),
-      allergy,
-      request_note: request_note || "追加事項なし",
-      status: "confirmed",
-      calendar_event_id
-    })
-  });
+  const headers = {
+    apikey: supabaseKey,
+    Authorization: `Bearer ${supabaseKey}`,
+    "Content-Type": "application/json"
+  };
 
-  const text = await response.text();
+  // ==========================================
+  // 1. 既存顧客をメールアドレスで検索
+  // ==========================================
+  const customerSearchResponse = await fetch(
+    `${supabaseUrl}/rest/v1/customers?email=eq.${encodeURIComponent(
+      email
+    )}&select=*`,
+    {
+      method: "GET",
+      headers
+    }
+  );
 
-  let data;
+  if (!customerSearchResponse.ok) {
+    const errorText = await customerSearchResponse.text();
+    throw new Error(`顧客検索に失敗しました。${errorText}`);
+  }
+
+  const existingCustomers = await customerSearchResponse.json();
+
+  let customer;
+
+  // ==========================================
+  // 2. 顧客がいなければ customers に登録
+  // ==========================================
+  if (existingCustomers.length > 0) {
+    customer = existingCustomers[0];
+  } else {
+    const customerResponse = await fetch(
+      `${supabaseUrl}/rest/v1/customers`,
+      {
+        method: "POST",
+        headers: {
+          ...headers,
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify({
+          name: customer_name,
+          phone: phone_number,
+          email: email
+        })
+      }
+    );
+
+    const customerText = await customerResponse.text();
+
+    let customerData;
+
+    try {
+      customerData = JSON.parse(customerText);
+    } catch {
+      throw new Error("顧客情報の保存結果を読み取れませんでした。");
+    }
+
+    if (!customerResponse.ok) {
+      throw new Error(
+        customerData?.message ||
+          customerData?.error ||
+          customerData?.details ||
+          "顧客情報の保存に失敗しました。"
+      );
+    }
+
+    customer = Array.isArray(customerData)
+      ? customerData[0]
+      : customerData;
+  }
+
+  const customerId = customer?.customer_id;
+
+  if (!customerId) {
+    throw new Error("customer_idを取得できませんでした。");
+  }
+
+  // ==========================================
+  // 3. reservations に予約を登録
+  // ==========================================
+  const reservationResponse = await fetch(
+    `${supabaseUrl}/rest/v1/reservations`,
+    {
+      method: "POST",
+      headers: {
+        ...headers,
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({
+        customer_id: customerId,
+        reservation_date: visit_date,
+        reservation_time: selected_time,
+        party_size: Number(people_count),
+        status: "confirmed",
+        calendar_event_id: calendar_event_id || null
+      })
+    }
+  );
+
+  const reservationText = await reservationResponse.text();
+
+  let reservationData;
 
   try {
-    data = JSON.parse(text);
+    reservationData = JSON.parse(reservationText);
   } catch {
+    throw new Error("予約情報の保存結果を読み取れませんでした。");
+  }
+
+  if (!reservationResponse.ok) {
     throw new Error(
-      "SupabaseからJSONではない応答が返りました。SUPABASE_URLとSUPABASE_ANON_KEYを確認してください。"
+      reservationData?.message ||
+        reservationData?.error ||
+        reservationData?.details ||
+        "予約情報の保存に失敗しました。"
     );
   }
 
-  if (!response.ok) {
+  const reservation = Array.isArray(reservationData)
+    ? reservationData[0]
+    : reservationData;
+
+  const reservationId = reservation?.reservation_id;
+
+  if (!reservationId) {
+    throw new Error("reservation_idを取得できませんでした。");
+  }
+
+  // ==========================================
+  // 4. reservation_items にメニューを登録
+  // ==========================================
+  const notes = [
+    `トッピング：${topping || "なし"}`,
+    `アレルギー：${allergy || "なし"}`,
+    `追加事項：${request_note || "追加事項なし"}`
+  ].join("\n");
+
+  const itemResponse = await fetch(
+    `${supabaseUrl}/rest/v1/reservation_items`,
+    {
+      method: "POST",
+      headers: {
+        ...headers,
+        Prefer: "return=representation"
+      },
+      body: JSON.stringify({
+        reservation_id: reservationId,
+        menu_name: curry_type,
+        spicy_level: spice_level,
+        size: rice_size,
+        quantity: Number(quantity),
+        notes
+      })
+    }
+  );
+
+  const itemText = await itemResponse.text();
+
+  let itemData;
+
+  try {
+    itemData = JSON.parse(itemText);
+  } catch {
+    throw new Error("メニュー情報の保存結果を読み取れませんでした。");
+  }
+
+  if (!itemResponse.ok) {
     throw new Error(
-      data?.message ||
-        data?.error ||
-        data?.details ||
-        "Supabaseへの予約保存に失敗しました。"
+      itemData?.message ||
+        itemData?.error ||
+        itemData?.details ||
+        "メニュー情報の保存に失敗しました。"
     );
   }
 
-  return Array.isArray(data) ? data[0] : data;
+  return reservation;
 }
 
 function getRequestBody(req) {
